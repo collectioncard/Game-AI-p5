@@ -64,15 +64,41 @@ class Individual_Grid(object):
 
     # Mutate a genome into a new genome.  Note that this is a _genome_, not an individual!
     def mutate(self, genome):
-        # STUDENT implement a mutation operator, also consider not mutating this individual
-        # STUDENT also consider weighting the different tile types so it's not uniformly random
-        # STUDENT consider putting more constraints on this to prevent pipes in the air, etc
+        # Probability of tile mutatation (45%)
+        mutation_rate = 0.45 
+        
+        # Avoid left and right border mutation
+        left = 1  
+        right = self.width - 1 
 
-        left = 1
-        right = width - 1
-        for y in range(height):
+        # Iterate over genome rows
+        for y in range(self.height):
+            # Iterate over the genome columns from left to right
             for x in range(left, right):
-                pass
+                # Mutate tile based on mutation rate
+                if random.random() < mutation_rate:
+                    curr_tile = genome[y][x] # Mutate the tile
+                    
+                    # Pipe is placed on the ground or above another pipe??
+                    if curr_tile == "|" and (y == 0 or genome[y-1][x] != "|"):
+                        continue
+                    
+                    # Mutate tile using weighted probabilities
+                    new_tile = random.choices(self.options, weights=[45, 20, 5, 3, 10, 10, 2,1,4])[0]   # Weights = probability of each tile type getting generated 
+
+                    # New pipes are placed above existing pipes
+                    if new_tile == "|":
+                        if y == 0 or genome[y-1][x] != "|":
+                            new_tile = "-"  # Change to ground if a pipe can't be placed
+                    
+                    # If new tile is pipe top, make sure it's place on a pipe
+                    elif new_tile == "T":
+                        if y == 0 or genome[y-1][x] != "|":
+                            new_tile = "-"  # Change to ground if a pipe top can't be placed
+                    
+                    # Mutate the genome
+                    genome[y][x] = new_tile
+
         return genome
 
     # Create zero or more children from self and other
