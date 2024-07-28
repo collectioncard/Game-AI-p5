@@ -373,7 +373,59 @@ def generate_successors(population):
     results = []
     # STUDENT Design and implement this
     # Hint: Call generate_children() on some individuals and fill up results.
+
+    number_to_select = int(len(population)/2)
+
+    elitist = elitist_selection(population, number_to_select)
+    roulette = roulette_selection(population, number_to_select)
+
+    # Just make them have children now? (weird comment to write ngl)
+    # Another random selection until we have enough children (fix later? idk)
+    while len(results) < len(population):
+        parent1 = random.choice(elitist)
+        parent2 = random.choice(roulette)
+        children = parent1.generate_children(parent2)
+        results += children
+
+        # Another thing I just thought of, does the parent order matter? We might need to make roulette the first parent
+        #
+        # Uncomment if this changes something
+        # parent1 = random.choice(roulette)
+        # parent2 = random.choice(elitist)
+        # children = parent1.generate_children(parent2)
+        # results += children
+
     return results
+
+
+# Elitist selection - Method 1 of 2.
+# This is very simple and just returns the top performing members of the population.
+def elitist_selection(population, number_to_select):
+    # Sort the population by fitness
+    sorted_population = sorted(population, key=Individual.fitness, reverse=True)
+
+    return sorted_population[:number_to_select]
+
+# Roulette selection - Method 2 of 2.
+# This gives weights to each member based on their fitness and then randomly selects them based on these weights.
+def roulette_selection(population, number_to_select):
+
+    fitness_arr = []
+    probabilities = []
+    total_fitness = 0
+
+    for member in population:
+        fitness = member.fitness()
+        fitness_arr.append(fitness)
+        total_fitness += fitness
+
+    for fitness in fitness_arr:
+        probabilities.append(fitness / total_fitness)
+
+    selected_members = random.choices(population, probabilities, k=number_to_select)
+
+    return selected_members
+
 
 
 def ga():
@@ -415,7 +467,7 @@ def ga():
                             f.write("".join(row) + "\n")
                 generation += 1
                 # STUDENT Determine stopping condition
-                stop_condition = False
+                stop_condition = now - start > 60 #TODO: Change this to something better. I Everything is the same rn, so I'm just basing it on time
                 if stop_condition:
                     break
                 # STUDENT Also consider using FI-2POP as in the Sorenson & Pasquier paper
