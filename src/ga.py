@@ -162,7 +162,7 @@ class Individual_Grid(object):
     #TODO: Nothing spawns near mario (10 above, no enemies above, 5 spaces to the right) - Thomas
     #TODO: 2 space gaps minimum - Y
     #TODO: Fix pipe malfunction - T
-    #TODO: Must be beatable
+    #TODO: Achieve best possible fitness
 
     # Turn the genome into a level string (easy for this genome)
     def to_level(self):
