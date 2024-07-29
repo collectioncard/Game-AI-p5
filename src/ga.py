@@ -21,10 +21,11 @@ options = [
     "|",  # a pipe segment
     "T",  # a pipe top
     "E",  # an enemy
-    #"f",  # a flag, do not generate
-    #"v",  # a flagpole, do not generate
-    #"m"  # mario's start position, do not generate
+    # "f",  # a flag, do not generate
+    # "v",  # a flagpole, do not generate
+    # "m"  # mario's start position, do not generate
 ]
+
 
 # The level as a grid of tiles
 
@@ -65,79 +66,94 @@ class Individual_Grid(object):
     # Mutate a genome into a new genome.  Note that this is a _genome_, not an individual!
     def mutate(self, genome):
         # Probability of tile mutatation (45%)
-        mutation_rate = 0.45 
-        
+        mutation_rate = 0.45
+
         # Avoid left and right border mutation
-        left = 1  
-        right = self.width - 1 
+        left = 1
+        right = width - 1
 
         # Iterate over genome rows
-        for y in range(self.height):
+        for y in range(height):
             # Iterate over the genome columns from left to right
             for x in range(left, right):
                 # Mutate tile based on mutation rate
                 if random.random() < mutation_rate:
-                    curr_tile = genome[y][x] # Mutate the tile
-                    
+                    curr_tile = genome[y][x]  # Mutate the tile
+
                     # Pipe is placed on the ground or above another pipe??
-                    if curr_tile == "|" and (y == 0 or genome[y-1][x] != "|"):
+                    if curr_tile == "|" and (y == 0 or genome[y - 1][x] != "|"):
                         continue
-                    
+
                     # Mutate tile using weighted probabilities
-                    new_tile = random.choices(self.options, weights=[45, 20, 5, 3, 10, 10, 2,1,4])[0]   # Weights = probability of each tile type getting generated 
+                    new_tile = random.choices(options, weights=[90, 5, 1, 1, 5, 3, 5, 5, 5])[
+                        0]  # Weights = probability of each tile type getting generated
 
                     # New pipes are placed above existing pipes
                     if new_tile == "|":
-                        if y == 0 or genome[y-1][x] != "|":
-                            new_tile = "-"  # Change to ground if a pipe can't be placed
-                    
+                        if y == 0 or genome[y - 1][x] != "|":
+                            new_tile = "X"  # Change to ground if a pipe can't be placed
+
                     # If new tile is pipe top, make sure it's place on a pipe
                     elif new_tile == "T":
-                        if y == 0 or genome[y-1][x] != "|":
-                            new_tile = "-"  # Change to ground if a pipe top can't be placed
-                    
+                        if y == 0 or genome[y - 1][x] != "|":
+                            new_tile = "X"  # Change to ground if a pipe top can't be placed
+
                     # Mutate the genome
                     genome[y][x] = new_tile
+
+                # Place a floor tile if we are at the bottom of the grid
+                # TODO: This is a temporary fix
+                if y == height - 1:
+                    if random.random() < 0.75:
+                        genome[height - 1][x] = "X"
+                    else:
+                        genome[height - 1][x] = "-"
+
 
         return genome
 
     # Create zero or more children from self and other
     def generate_children(self, other):
-        n# Create a deep copy of the current genome to create a new genome for the child
-    new_genome = copy.deepcopy(self.genome)
+        # Create a deep copy of the current genome to create a new genome for the child
+        new_genome = copy.deepcopy(self.genome)
 
-    # Leaving the first and last columns alone to prevent border mutations
-    left = 1
-    right = self.width - 1
+        # Leaving the first and last columns alone to prevent border mutations
+        left = 1
+        right = width - 1
 
-    # Perform crossover with the other genome
-    for y in range(self.height):  # Iterate through genome rows 
-        for x in range(left, right):  # Iterate through genome columns
-            # take the tile from self
-            new_tile = self.genome[y][x]
-            
-            #  Pipe not in the air
-            if new_tile == "|":
-                if y == 0 or new_genome[y-1][x] != "|":
-                    new_tile = "-"  # Change to ground if a pipe can't be placed
-            
-            # Pipe tops are placed on pipes
-            elif new_tile == "T":
-                if y == 0 or new_genome[y-1][x] != "|":
-                    new_tile = "-"  # Change to ground if a pipe top can't be placed
-            
-            # Apply tile to the new genome
-            new_genome[y][x] = new_tile
+        # Perform crossover with the other genome
+        for y in range(height):  # Iterate through genome rows
+            for x in range(left, right):  # Iterate through genome columns
+                # take the tile from self or other
+                if random.random() < 0.5:
+                    new_tile = self.genome[y][x]
+                else:
+                    new_tile = other.genome[y][x]
 
-    # Mutate the new genome
-    new_genome = self.mutate(new_genome)
-    
-    # Return a tuple with a child (Individual_Grid) with the new genome
-    return (Individual_Grid(new_genome),)
+                #  Pipe not in the air
+                if new_tile == "|":
+                    if y == 0 or new_genome[y - 1][x] != "|":
+                        new_tile = "-"  # Change to ground if a pipe can't be placed
 
-# Explanation of self decision:
-    # The primary genome (`self`) is the dominant source for the child, 
-    # maintaining characteristics but allowing mutations.
+                # Pipe tops are placed on pipes
+                elif new_tile == "T":
+                    if y == 0 or new_genome[y - 1][x] != "|":
+                        new_tile = "X"  # Change to ground if a pipe top can't be placed
+
+                # Apply tile to the new genome
+                new_genome[y][x] = new_tile
+
+        # Mutate the new genome
+        new_genome = self.mutate(new_genome)
+
+        # Return a tuple with a child (Individual_Grid) with the new genome
+        return (Individual_Grid(new_genome),)
+
+    #TODO: Nothing spawns near mario (10 above, no enemies above, 5 spaces to the right) - Thomas
+    #TODO: 2 space gaps minimum - Y
+    #TODO: Fix pipe malfunction - T
+    #TODO: Must be beatable
+    #TODO: NO hardcoded floor (add gaps) - Y
 
     # Turn the genome into a level string (easy for this genome)
     def to_level(self):
@@ -171,7 +187,7 @@ class Individual_Grid(object):
 
 
 def offset_by_upto(val, variance, min=None, max=None):
-    val += random.normalvariate(0, variance**0.5)
+    val += random.normalvariate(0, variance ** 0.5)
     if min is not None and val < min:
         val = min
     if max is not None and val > max:
@@ -185,6 +201,7 @@ def clip(lo, val, hi):
     if val > hi:
         return hi
     return val
+
 
 # Inspired by https://www.researchgate.net/profile/Philippe_Pasquier/publication/220867545_Towards_a_Generic_Framework_for_Automated_Video_Game_Level_Creation/links/0912f510ac2bed57d1000000.pdf
 
@@ -378,7 +395,8 @@ class Individual_DE(object):
         elt_count = random.randint(8, 128)
         g = [random.choice([
             (random.randint(1, width - 2), "0_hole", random.randint(1, 8)),
-            (random.randint(1, width - 2), "1_platform", random.randint(1, 8), random.randint(0, height - 1), random.choice(["?", "X", "B"])),
+            (random.randint(1, width - 2), "1_platform", random.randint(1, 8), random.randint(0, height - 1),
+             random.choice(["?", "X", "B"])),
             (random.randint(1, width - 2), "2_enemy"),
             (random.randint(1, width - 2), "3_coin", random.randint(0, height - 1)),
             (random.randint(1, width - 2), "4_block", random.randint(0, height - 1), random.choice([True, False])),
@@ -397,7 +415,7 @@ def generate_successors(population):
     # STUDENT Design and implement this
     # Hint: Call generate_children() on some individuals and fill up results.
 
-    number_to_select = int(len(population)/2)
+    number_to_select = int(len(population) / 2)
 
     elitist = elitist_selection(population, number_to_select)
     roulette = roulette_selection(population, number_to_select)
@@ -429,10 +447,10 @@ def elitist_selection(population, number_to_select):
 
     return sorted_population[:number_to_select]
 
+
 # Roulette selection - Method 2 of 2.
 # This gives weights to each member based on their fitness and then randomly selects them based on these weights.
 def roulette_selection(population, number_to_select):
-
     fitness_arr = []
     probabilities = []
     total_fitness = 0
@@ -448,7 +466,6 @@ def roulette_selection(population, number_to_select):
     selected_members = random.choices(population, probabilities, k=number_to_select)
 
     return selected_members
-
 
 
 def ga():
@@ -490,7 +507,7 @@ def ga():
                             f.write("".join(row) + "\n")
                 generation += 1
                 # STUDENT Determine stopping condition
-                stop_condition = now - start > 60 #TODO: Change this to something better. I Everything is the same rn, so I'm just basing it on time
+                stop_condition = now - start > 30  # TODO: Change this to something better. I Everything is the same rn, so I'm just basing it on time
                 if stop_condition:
                     break
                 # STUDENT Also consider using FI-2POP as in the Sorenson & Pasquier paper
