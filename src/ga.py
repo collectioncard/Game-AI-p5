@@ -98,6 +98,16 @@ class Individual_Grid(object):
                         if y == 0 or genome[y - 1][x] != "|":
                             new_tile = "X"  # Change to ground if a pipe top can't be placed
 
+                    #Make sure Mario can fit through spaces.
+                    if new_tile == "-":
+                        # Increase the chance of having a space tile directly above or below
+                        if y > 0 and genome[y - 1][x] != "-":
+                            if random.random() < 0.5:
+                                genome[y - 1][x] = "-"
+                        if y < height - 1 and genome[y + 1][x] != "-":
+                            if random.random() < 0.5:
+                                genome[y + 1][x] = "-"
+
                     # Mutate the genome
                     genome[y][x] = new_tile
 
@@ -153,7 +163,6 @@ class Individual_Grid(object):
     #TODO: 2 space gaps minimum - Y
     #TODO: Fix pipe malfunction - T
     #TODO: Must be beatable
-    #TODO: NO hardcoded floor (add gaps) - Y
 
     # Turn the genome into a level string (easy for this genome)
     def to_level(self):
