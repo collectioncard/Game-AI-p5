@@ -103,18 +103,41 @@ class Individual_Grid(object):
 
     # Create zero or more children from self and other
     def generate_children(self, other):
-        new_genome = copy.deepcopy(self.genome)
-        # Leaving first and last columns alone...
-        # do crossover with other
-        left = 1
-        right = width - 1
-        for y in range(height):
-            for x in range(left, right):
-                # STUDENT Which one should you take?  Self, or other?  Why?
-                # STUDENT consider putting more constraints on this to prevent pipes in the air, etc
-                pass
-        # do mutation; note we're returning a one-element tuple here
-        return (Individual_Grid(new_genome),)
+        n# Create a deep copy of the current genome to create a new genome for the child
+    new_genome = copy.deepcopy(self.genome)
+
+    # Leaving the first and last columns alone to prevent border mutations
+    left = 1
+    right = self.width - 1
+
+    # Perform crossover with the other genome
+    for y in range(self.height):  # Iterate through genome rows 
+        for x in range(left, right):  # Iterate through genome columns
+            # take the tile from self
+            new_tile = self.genome[y][x]
+            
+            #  Pipe not in the air
+            if new_tile == "|":
+                if y == 0 or new_genome[y-1][x] != "|":
+                    new_tile = "-"  # Change to ground if a pipe can't be placed
+            
+            # Pipe tops are placed on pipes
+            elif new_tile == "T":
+                if y == 0 or new_genome[y-1][x] != "|":
+                    new_tile = "-"  # Change to ground if a pipe top can't be placed
+            
+            # Apply tile to the new genome
+            new_genome[y][x] = new_tile
+
+    # Mutate the new genome
+    new_genome = self.mutate(new_genome)
+    
+    # Return a tuple with a child (Individual_Grid) with the new genome
+    return (Individual_Grid(new_genome),)
+
+# Explanation of self decision:
+    # The primary genome (`self`) is the dominant source for the child, 
+    # maintaining characteristics but allowing mutations.
 
     # Turn the genome into a level string (easy for this genome)
     def to_level(self):
