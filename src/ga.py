@@ -271,6 +271,18 @@ class Individual_DE(object):
         # STUDENT For example, too many stairs are unaesthetic.  Let's penalize that
         if len(list(filter(lambda de: de[1] == "6_stairs", self.genome))) > 5:
             penalties -= 2
+
+        # Levels without enemies are boring
+        enemy_count = len(list(filter(lambda de: de[1] == "2_enemy", self.genome)))
+        if enemy_count < 20:
+            print("Only " + str(enemy_count) + " enemies in this level.")
+            penalties += .5 * enemy_count
+
+        max_pipe_height = 4
+        tall_pipe_count = len(list(filter(lambda de: de[1] == "7_pipe" and de[2] > max_pipe_height, self.genome)))
+        if tall_pipe_count > 0:
+            penalties -= 10  # Adjust the penalty factor as needed
+
         # STUDENT If you go for the FI-2POP extra credit, you can put constraint calculation in here too and cache it in a new entry in __slots__.
         self._fitness = sum(map(lambda m: coefficients[m] * measurements[m],
                                 coefficients)) + penalties
@@ -282,9 +294,7 @@ class Individual_DE(object):
         return self._fitness
 
     def mutate(self, new_genome):
-        # STUDENT How does this work?  Explain it in your writeup.
-        # STUDENT consider putting more constraints on this, to prevent generating weird things
-        if random.random() < 0.1 and len(new_genome) > 0:
+        if random.random() < 0.4 and len(new_genome) > 0:
             to_change = random.randint(0, len(new_genome) - 1)
             de = new_genome[to_change]
             new_de = de
@@ -443,7 +453,7 @@ class Individual_DE(object):
         return Individual_DE(g)
 
 
-Individual = Individual_Grid
+Individual = Individual_DE
 
 
 def generate_successors(population):
@@ -458,9 +468,18 @@ def generate_successors(population):
 
     # Just make them have children now? (weird comment to write ngl)
     # Another random selection until we have enough children (fix later? idk)
+
+    #Breed the top of both just because
+    elitist[0].generate_children(roulette[0])
+
     while len(results) < len(population):
         parent1 = random.choice(elitist)
         parent2 = random.choice(roulette)
+
+        #Skip if the parents are empty
+        if parent1.genome == [] or parent2.genome == []:
+            continue
+
         children = parent1.generate_children(parent2)
         results += children
 
