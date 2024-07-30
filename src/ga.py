@@ -66,7 +66,7 @@ class Individual_Grid(object):
     # Mutate a genome into a new genome.  Note that this is a _genome_, not an individual!
     def mutate(self, genome):
         # Probability of tile mutatation (45%)
-        mutation_rate = 0.45
+        mutation_rate = .02
 
         # Avoid left and right border mutation
         left = 1
@@ -78,48 +78,27 @@ class Individual_Grid(object):
             for x in range(left, right):
                 # Mutate tile based on mutation rate
                 if random.random() < mutation_rate:
-                    curr_tile = genome[y][x]  # Mutate the tile
+                    curr_tile = genome[y][x]  # The tile that we are going to replace
+                    mutated_tile = random.choices(options, weights=[90, 5, 1, 1, 5, 3, 0, 0, 5])[0]  # Weights = probability of each tile type getting generated
 
-                    # Pipe is placed on the ground or above another pipe??
-                    if curr_tile == "|" and (y == 0 or genome[y - 1][x] != "|"):
+                    # Stop eating my pipes or I swear im gonna eat *you*
+                    if curr_tile == "T" or curr_tile == "|":
                         continue
 
-                    # Mutate tile using weighted probabilities
-                    new_tile = random.choices(options, weights=[90, 5, 1, 1, 5, 3, 5, 5, 5])[
-                        0]  # Weights = probability of each tile type getting generated
+                    #TODO temporarily disabled while doing pipe stuff
 
-                    # New pipes are placed above existing pipes
-                    if new_tile == "|":
-                        if y == 0 or genome[y - 1][x] != "|":
-                            new_tile = "X"  # Change to ground if a pipe can't be placed
-
-                    # If new tile is pipe top, make sure it's place on a pipe
-                    elif new_tile == "T":
-                        if y == 0 or genome[y - 1][x] != "|":
-                            new_tile = "X"  # Change to ground if a pipe top can't be placed
-
-                    #Make sure Mario can fit through spaces.
-                    if new_tile == "-":
-                        # Increase the chance of having a space tile directly above or below
-                        if y > 0 and genome[y - 1][x] != "-":
-                            if random.random() < 0.5:
-                                genome[y - 1][x] = "-"
-                        if y < height - 1 and genome[y + 1][x] != "-":
-                            if random.random() < 0.5:
-                                genome[y + 1][x] = "-"
+                    # #Make sure Mario can fit through spaces.
+                    # if mutated_tile == "-":
+                    #     # Increase the chance of having a space tile directly above or below
+                    #     if y > 0 and genome[y - 1][x] != "-":
+                    #         if random.random() < 0.5:
+                    #             genome[y - 1][x] = "-"
+                    #     if y < height - 1 and genome[y + 1][x] != "-":
+                    #         if random.random() < 0.5:
+                    #             genome[y + 1][x] = "-"
 
                     # Mutate the genome
-                    genome[y][x] = new_tile
-
-                # Place a floor tile if we are at the bottom of the grid
-                # TODO: This is a temporary fix
-                if y == height - 1:
-                    if random.random() < 0.75:
-                        genome[height - 1][x] = "X"
-                    else:
-                        genome[height - 1][x] = "-"
-
-
+                    genome[y][x] = mutated_tile
         return genome
 
     # Create zero or more children from self and other
@@ -134,21 +113,13 @@ class Individual_Grid(object):
         # Perform crossover with the other genome
         for y in range(height):  # Iterate through genome rows
             for x in range(left, right):  # Iterate through genome columns
+
+
                 # take the tile from self or other
-                if random.random() < 0.5:
+                if random.random() < -0.5:
                     new_tile = self.genome[y][x]
                 else:
                     new_tile = other.genome[y][x]
-
-                #  Pipe not in the air
-                if new_tile == "|":
-                    if y == 0 or new_genome[y - 1][x] != "|":
-                        new_tile = "-"  # Change to ground if a pipe can't be placed
-
-                # Pipe tops are placed on pipes
-                elif new_tile == "T":
-                    if y == 0 or new_genome[y - 1][x] != "|":
-                        new_tile = "X"  # Change to ground if a pipe top can't be placed
 
                 # Apply tile to the new genome
                 new_genome[y][x] = new_tile
@@ -159,7 +130,7 @@ class Individual_Grid(object):
         # Return a tuple with a child (Individual_Grid) with the new genome
         return (Individual_Grid(new_genome),)
 
-    #TODO: Nothing spawns near mario (10 above, no enemies above, 5 spaces to the right) - Thomas
+    #TODO: Nothing spawns near mario (10 above, no enemies above, 5 spaces to the right) - Thomas (DONE-ish)
     #TODO: 2 space gaps minimum - Y
     #TODO: Fix pipe malfunction - T
     #TODO: Achieve best possible fitness
@@ -186,12 +157,33 @@ class Individual_Grid(object):
     def random_individual(cls):
         # STUDENT consider putting more constraints on this to prevent pipes in the air, etc
         # STUDENT also consider weighting the different tile types so it's not uniformly random
-        g = [random.choices(options, k=width) for row in range(height)]
+
+        # Generate the Empty 2D array that represents the genome
+        g = [["-" for col in range(width)] for row in range(height)]
+
+        # Fill the bottom of it with solid tiles (X)
         g[15][:] = ["X"] * width
+
+        # Place Mario at the start of the level
         g[14][0] = "m"
+
+        # Place the flag at the end of the level
         g[7][-1] = "v"
-        g[8:14][-1] = ["f"] * 6
-        g[14:16][-1] = ["X", "X"]
+        g[14][-1] = "X"
+        for col in range(8, 14):
+            g[col][-1] = "f"
+
+        # Randomly place a few pipe tops. Mario can clear up to 5 blocks. Limit the pipe tops to the first 5 blocks.
+        pipe_count = random.randint(10, 50)
+        for i in range(pipe_count):
+            x = random.randint(1, width - 2)  # Randomly select x-coordinate across the width of the level
+            y = random.randint(11, 14)  # Ensure the y-coordinate is between 11 and 14
+            g[y][x] = "T"
+            # Place the pipe segment below the pipe top until the bottom of the level
+            for j in range(y + 1, 16):
+                g[j][x] = "|"
+
+
         return cls(g)
 
 
@@ -516,7 +508,7 @@ def ga():
                             f.write("".join(row) + "\n")
                 generation += 1
                 # STUDENT Determine stopping condition
-                stop_condition = now - start > 30  # TODO: Change this to something better. I Everything is the same rn, so I'm just basing it on time
+                stop_condition = now - start > 10  # TODO: Change this to something better. I Everything is the same rn, so I'm just basing it on time
                 if stop_condition:
                     break
                 # STUDENT Also consider using FI-2POP as in the Sorenson & Pasquier paper
